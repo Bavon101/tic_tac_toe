@@ -13,7 +13,7 @@ class GameHome extends StatefulWidget {
 }
 
 class _GameHomeState extends State<GameHome> {
-  /// keeps track of the board keyed data, it's just updated as per the new moves
+  ///String List that keeps track of the board keyed data, it's just updated as per the new moves, by default it's a list of empty strings
 
   List<String> _moves = ['', '', '', '', '', '', '', '', ''];
 
