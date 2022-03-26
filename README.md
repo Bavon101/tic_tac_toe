@@ -22,7 +22,7 @@ To get a local copy up and running follow these simple example steps.
 - Clone the GitHub Repository
 - Go to the Project Directory
 - Run ```flutter pub get```
-- Run ```flutterrun``` to build the app
+- Run ```flutter run``` to build the app
 
 👤 **Author**
 
