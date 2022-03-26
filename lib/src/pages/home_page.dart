@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../widgets/board_tile.dart';
 import '../widgets/dialog_body.dart';
@@ -33,6 +35,8 @@ class _GameHomeState extends State<GameHome> {
   /// keeps a record of player "X" scores, having same track as [_playerOscores]
   int _playerXScores = 0;
 
+  /// Game Board key that is used to capture screenshot
+  final GlobalKey _boardKey = GlobalKey();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,6 +90,7 @@ class _GameHomeState extends State<GameHome> {
           ),
           Expanded(
             child: GridView.count(
+              key: _boardKey,
               primary: false,
               padding: const EdgeInsets.all(20),
               crossAxisSpacing: 0,
@@ -154,9 +159,15 @@ class _GameHomeState extends State<GameHome> {
     } else {
       _playerXScores += 5;
     }
+
+    // get the last board view catpured as in bytes
+    Uint8List? _screenshot = await _captureBoard();
+
     await showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (_) => DialogBody(
+          boardView: _screenshot,
             title: 'We have a Winner✨',
             message: 'Player "${player.toUpperCase()}" wins this round\n+5'));
     _resetGame();
@@ -172,5 +183,74 @@ class _GameHomeState extends State<GameHome> {
   }
 
   /// Called everytime a player makes a move, checking if any of the players moves match a valid win or draw then calls on [_updateScores] if a win is found
-  Future<void> _checkWinner() async {}
+  Future<void> _checkWinner() async {
+        // check if the recorded moves macth in all exis [x,y,z] or both ;
+    // with [_moves[4]] we take index 4 as the midlle and check all the axis
+
+    // we wait for the latest ui to render so that the latest screen is captured
+    await Future.delayed(const Duration(milliseconds: 20));
+
+    if (_moves[0] == _moves[4] &&
+        _moves[8] == _moves[4] &&
+        _moves[4].isNotEmpty) {
+      _updateScores(_moves[4]);
+    } else if (_moves[6] == _moves[4] &&
+        _moves[2] == _moves[4] &&
+        _moves[4].isNotEmpty) {
+      _updateScores(_moves[4]);
+    } else if (_moves[1] == _moves[4] &&
+        _moves[7] == _moves[4] &&
+        _moves[4].isNotEmpty) {
+      _updateScores(_moves[4]);
+    } else if (_moves[3] == _moves[4] &&
+        _moves[5] == _moves[4] &&
+        _moves[4].isNotEmpty) {
+      _updateScores(_moves[4]);
+    }
+
+    // taking now the first and last [column,row] middle indexes to use to check if the [x,y] ar a match
+    else if (_moves[3] == _moves[0] &&
+        _moves[6] == _moves[3] &&
+        _moves[3].isNotEmpty) {
+      _updateScores(_moves[3]);
+    } else if (_moves[1] == _moves[0] &&
+        _moves[2] == _moves[1] &&
+        _moves[1].isNotEmpty) {
+      _updateScores(_moves[1]);
+    } else if (_moves[5] == _moves[2] &&
+        _moves[8] == _moves[5] &&
+        _moves[5].isNotEmpty) {
+      _updateScores(_moves[5]);
+    } else if (_moves[7] == _moves[6] &&
+        _moves[8] == _moves[7] &&
+        _moves[7].isNotEmpty) {
+      _updateScores(_moves[7]);
+    }
+
+    // if the conditions set are not met, we check if all moves have been made and we mark it as a draw
+    else if (!_moves.contains('')) {
+      // if _moves has no empty string, it means all move have been made without a winner
+      Uint8List? _screenshot = await _captureBoard();
+      await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => DialogBody(
+              boardView: _screenshot,
+              title: 'We have a Draw 😎',
+              message: 'Balance Exists now, as all things should be'));
+      _resetGame();
+    }
+  }
+
+  ///  takes the last view of the baord and creates an image to display to the players
+  Future<Uint8List?> _captureBoard() async {
+    RenderRepaintBoundary? boundary =
+        _boardKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
+    var image = await boundary.toImage(pixelRatio: 3.0);
+    ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
+    if (byteData != null) {
+      return byteData.buffer.asUint8List();
+    }
+    return null;
+  }
 }
